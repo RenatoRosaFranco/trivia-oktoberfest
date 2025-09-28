@@ -1,4 +1,4 @@
-import { OpenAI } from 'openai';
+import { OpenAI } from "openai";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -9,23 +9,23 @@ let ranking = {};
 
 async function generateQuestion() {
   const completion = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: "gpt-4o-mini",
     messages: [
-      { role: 'system', content: 'Você é um gerador de perguntas de trivia' },
+      { role: "system", content: "Você é um gerador de perguntas de trivia" },
       {
-        role: 'user',
-        content: `Gere uma pergunta de trivia sobre cultura alemã ou oktoberfest.
+        role: "user",
+        content: `Gere uma pergunta de trivia sobre cultura alemã ou Oktoberfest.
         Responda em JSON no formato {"q": "PERGUNTA", "a": "RESPOSTA" }.
-        A resposta deve ser curta (max 2 palavras).`,
+        A resposta deve ser curta (máx 2 palavras).`,
       },
     ],
-    max_tokens: 80
-  })
+    max_tokens: 80,
+  });
 
   try {
     return JSON.parse(completion.choices[0].message.content.trim());
-  } catch(error) {
-    return { q: "Qual bebida é típica da Oktoberfest?", a: "Cerveja" }
+  } catch (error) {
+    return { q: "Qual bebida é típica da Oktoberfest?", a: "Cerveja" };
   }
 }
 
@@ -33,20 +33,20 @@ function alexaResponse(text, endSession = false) {
   return {
     version: "1.0",
     response: {
-      outputSpeech: { type: "PlainText", text: text },
+      outputSpeech: { type: "PlainText", text },
       shouldEndSession: endSession,
     },
   };
 }
 
-export default async function handler(req, res) {
-  const event  = req.body;
+export async function POST(req) {
+  const event = await req.json();
   const userId = event.session?.user?.userId || "anon";
 
   if (event.request.type === "LaunchRequest") {
-    return res.json(
+    return Response.json(
       alexaResponse("Bem vindo ao Trivia! Diga começar para iniciar o jogo.")
-    )
+    );
   }
 
   if (event.request.type === "IntentRequest") {
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
     if (intent === "StartGameIntent") {
       const question = await generateQuestion();
       currentQuestion[userId] = question;
-      return res.json(alexaResponse(`Vamos lá! ${question.q}`));
+      return Response.json(alexaResponse(`Vamos lá! ${question.q}`));
     }
 
     if (intent === "AnswerIntent") {
@@ -63,7 +63,9 @@ export default async function handler(req, res) {
       const actualQuestion = currentQuestion[userId];
 
       if (!actualQuestion) {
-        return res.json(alexaResponse('Você ainda não começou o jogo. Diga começar para jogar.'));
+        return Response.json(
+          alexaResponse("Você ainda não começou o jogo. Diga começar para jogar.")
+        );
       }
 
       const correctAnswer = actualQuestion.a;
@@ -73,12 +75,12 @@ export default async function handler(req, res) {
         ranking[userId] = (ranking[userId] || 0) + 1;
         feedback = `Correto! Você já tem ${ranking[userId]} ponto(s).`;
       } else {
-        feedback = `Errado! A resposta certa é ${correctAnswer}`;
+        feedback = `Errado! A resposta certa é ${correctAnswer}.`;
       }
 
-      return res.json(alexaResponse(feedback + " Quer jogar outra?"));
+      return Response.json(alexaResponse(feedback + " Quer jogar outra?"));
     }
   }
 
-  return res.json(alexaResponse('Não entendi. Tente novamente.'));
+  return Response.json(alexaResponse("Não entendi. Tente novamente."));
 }
