@@ -11,32 +11,39 @@ async function generateQuestion() {
   const completion = await client.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
-      {
-        role: "system",
-        content: "Você é um gerador de perguntas de trivia. sempre responda apenas em JSON válido."
-      },
+      { role: "system", content: "Você é um gerador de perguntas de trivia" },
       {
         role: "user",
-        content: `Gere uma pergunta de trivia sobre cultura alemã ou Oktoberfest,
-        diferente das últimas comuns (cerveja, Munique, trajes típicos).
-        Prefira culinária, música, história, datas ou curiosidades menos óbvias.
-        Responda apenas em JSON {"q": "...", "a": "..."}`
+        content: `Gere uma pergunta de trivia sobre cultura alemã ou Oktoberfest.
+        Responda apenas em JSON puro no formato {"q": "PERGUNTA", "a": "RESPOSTA"}.
+        A resposta deve ser curta (máx 2 palavras). Não adicione explicações, nem markdown.`,
       },
     ],
     max_tokens: 80,
-    temperature: 0.9,
-    top_p: 0.95
+    temperature: 0.7,
   });
 
   try {
-    let raw = completion.choices[0].message.content.trim();
+    let raw = completion.choices[0].message?.content?.trim() || "";
+    console.log("Resposta crua do GPT:", raw);
+
     raw = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
 
-    console.log("Response from ChatGPT:", raw)
-    return JSON.parse(raw);
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      return JSON.parse(match[0]);
+    }
+
+    throw new Error("Nenhum JSON válido encontrado");
   } catch (error) {
-    console.log(`[ERROR]: Failed to parse JSON: ${error}`);
-    return { q: "Qual bebida é típica da Oktoberfest?", a: "Cerveja" };
+    console.error("[ERROR] Falha ao parsear JSON:", error);
+    const fallbacks = [
+      { q: "Qual cidade é considerada o berço da Oktoberfest?", a: "Munique" },
+      { q: "Qual traje típico masculino é usado na Oktoberfest?", a: "Lederhosen" },
+      { q: "Qual traje típico feminino é usado na Oktoberfest?", a: "Dirndl" },
+      { q: "Qual é a bebida mais associada à Oktoberfest?", a: "Cerveja" },
+    ];
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
   }
 }
 
