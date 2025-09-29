@@ -1,0 +1,11 @@
+29/10 - Estruturar Instagram da Square Pro Evento
+  - 1Hr de Brainstorm + Execução com Canvas
+    - Trivia
+    + 2 outras ideias
+29/10 - Criar conteudo engajamento redes sociais.
+29/10 - Adicionar Paginação no endpoint
+29/10 - Melhorar UI
+
+30/10 - Melhorar código endpoint Alexa / Alexa funções
+04/10 - Realizar Dump de Perguntas
+05/10 - Subir Site da Tech Missões (Deixar o pessoal conhecer no evento)

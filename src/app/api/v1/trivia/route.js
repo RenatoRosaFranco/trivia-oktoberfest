@@ -1,50 +1,25 @@
-import OpenAI from "openai";
+import { createClient } from "@supabase/supabase-js";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 
 let currentQuestion = {};
 let ranking = {};
 
-async function generateQuestion() {
-  const completion = await client.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      { role: "system", content: "Você é um gerador de perguntas de trivia" },
-      {
-        role: "user",
-        content: `Gere uma pergunta de trivia sobre cultura alemã ou Oktoberfest.
-        Responda apenas em JSON puro no formato {"q": "PERGUNTA", "a": "RESPOSTA"}.
-        A resposta deve ser curta (máx 2 palavras). Não adicione explicações, nem markdown.`,
-      },
-    ],
-    max_tokens: 80,
-    temperature: 0.7,
-  });
+async function getRandomQuestion() {
+  const { data, error } = await supabase
+    .from('questions')
+    .select('*');
 
-  try {
-    let raw = completion.choices[0].message?.content?.trim() || "";
-    console.log("Resposta crua do GPT:", raw);
-
-    raw = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
-
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (match) {
-      return JSON.parse(match[0]);
-    }
-
-    throw new Error("Nenhum JSON válido encontrado");
-  } catch (error) {
-    console.error("[ERROR] Falha ao parsear JSON:", error);
-    const fallbacks = [
-      { q: "Qual cidade é considerada o berço da Oktoberfest?", a: "Munique" },
-      { q: "Qual traje típico masculino é usado na Oktoberfest?", a: "Lederhosen" },
-      { q: "Qual traje típico feminino é usado na Oktoberfest?", a: "Dirndl" },
-      { q: "Qual é a bebida mais associada à Oktoberfest?", a: "Cerveja" },
-    ];
-    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  if (error || !data?.length) {
+    console.log("[DEBUG]: Erro buscando pergunta:", error);
+    return { q: "Qual é a bebida típica da Oktoberfest?", a: "Cerveja" };
   }
+
+  const randomIndex = Math.floor(Math.random() * data.length);
+  return { q: data[randomIndex].question, a: data[randomIndex].answer };
 }
 
 function alexaResponse(text, endSession = false) {
@@ -71,7 +46,7 @@ export async function POST(req) {
     const intent = event.request.intent.name;
 
     if (intent === "StartGameIntent") {
-      const question = await generateQuestion();
+      const question = await getRandomQuestion();
       currentQuestion[userId] = question;
       return Response.json(alexaResponse(`Vamos lá! ${question.q}`));
     }
@@ -100,7 +75,7 @@ export async function POST(req) {
     }
 
     if (intent === "AMAZON.YesIntent") {
-      const question = await generateQuestion();
+      const question = await getRandomQuestion();
       currentQuestion[userId] = question;
       return Response.json(alexaResponse(`Beleza! ${question.q}`));
     }
