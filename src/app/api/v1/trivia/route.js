@@ -1,4 +1,4 @@
-import { OpenAI } from "openai";
+import OpenAI from "openai";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -11,20 +11,31 @@ async function generateQuestion() {
   const completion = await client.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
-      { role: "system", content: "Você é um gerador de perguntas de trivia" },
+      {
+        role: "system",
+        content: "Você é um gerador de perguntas de trivia. sempre responda apenas em JSON válido."
+      },
       {
         role: "user",
-        content: `Gere uma pergunta de trivia sobre cultura alemã ou Oktoberfest.
-        Responda em JSON no formato {"q": "PERGUNTA", "a": "RESPOSTA" }.
-        A resposta deve ser curta (máx 2 palavras).`,
+        content: `Gere uma pergunta de trivia sobre cultura alemã ou Oktoberfest,
+        diferente das últimas comuns (cerveja, Munique, trajes típicos).
+        Prefira culinária, música, história, datas ou curiosidades menos óbvias.
+        Responda apenas em JSON {"q": "...", "a": "..."}`
       },
     ],
     max_tokens: 80,
+    temperature: 0.9,
+    top_p: 0.95
   });
 
   try {
-    return JSON.parse(completion.choices[0].message.content.trim());
+    let raw = completion.choices[0].message.content.trim();
+    raw = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
+
+    console.log("Response from ChatGPT:", raw)
+    return JSON.parse(raw);
   } catch (error) {
+    console.log(`[ERROR]: Failed to parse JSON: ${error}`);
     return { q: "Qual bebida é típica da Oktoberfest?", a: "Cerveja" };
   }
 }
