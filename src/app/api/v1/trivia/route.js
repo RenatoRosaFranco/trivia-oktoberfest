@@ -98,6 +98,18 @@ export async function POST(req) {
 
       return Response.json(alexaResponse(feedback + " Quer jogar outra?"));
     }
+
+    if (intent === "AMAZON.YesIntent") {
+      const question = await generateQuestion();
+      currentQuestion[userId] = question;
+      return Response.json(alexaResponse(`Beleza! ${question.q}`));
+    }
+
+    if (intent === "AMAZON.NoIntent") {
+      return Response.json(
+        alexaResponse("Ok, obrigado por jogar! Até a próxima.", true)
+      );
+    }
   }
 
   return Response.json(alexaResponse("Não entendi. Tente novamente."));
