@@ -22,16 +22,19 @@ function getAttractionsByDate(dateStr) {
 function normalizeDateSlot(dateSlot) {
   if (!dateSlot) return null;
 
-  // YYYY-MM-DD completo
-  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateSlot)) {
-    const [y, m, d] = dateSlot.split("-");
+  // remove hora se vier junto (ex: 2025-10-09T00:00:00)
+  const clean = dateSlot.split("T")[0];
+
+  // YYYY-MM-DD completo (1 ou 2 dígitos)
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(clean)) {
+    const [y, m, d] = clean.split("-");
     return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
   }
 
   // XXXX-MM-DD sem ano -> substitui pelo ano atual
-  if (/^XXXX-\d{1,2}-\d{1,2}$/.test(dateSlot)) {
+  if (/^XXXX-\d{1,2}-\d{1,2}$/.test(clean)) {
     const todayYear = new Date().getFullYear();
-    const [, m, d] = dateSlot.split("-");
+    const [, m, d] = clean.split("-");
     return `${todayYear}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
   }
 
