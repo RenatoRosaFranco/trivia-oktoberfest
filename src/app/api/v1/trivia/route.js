@@ -15,7 +15,7 @@ let ranking = {};
 const attractionYamlPath = path.join(process.cwd(), 'src/data/attractions.yaml');
 const attractions = yaml.load(fs.readFileSync(attractionYamlPath, 'utf8'));
 
-function getTodayAttractions() {
+function getTodaysAttractions() {
   const today = new Date().toISOString().split('T')[0];
   return attractions[today] || ["Nenhuma atração cadastrada para hoje."];
 }
