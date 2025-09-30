@@ -15,6 +15,10 @@ let ranking = {};
 const attractionYamlPath = path.join(process.cwd(), 'src/data/attractions.yaml');
 const attractions = yaml.load(fs.readFileSync(attractionYamlPath, 'utf8'));
 
+function getAttractionsByDate(dateStr) {
+  return attractions[dateStr] || [` Nenhuma atração cadastrada para ${dateStr}.`];
+}
+
 function getTodaysAttractions() {
   const today = new Date().toISOString().split('T')[0];
   return attractions[today] || ["Nenhuma atração cadastrada para hoje."];
@@ -86,6 +90,19 @@ export async function POST(req) {
       }
 
       return Response.json(alexaResponse(feedback + " Quer jogar outra?"));
+    }
+
+    if (intent === "GetAttractionsByDateIntent") {
+      const dateSlot = event.request.intent.slots.date?.value;
+      if (!dateSlot) {
+        return Response.json(
+          alexaResponse("Não entendi a data. Tente falar algo como 8 de outubro.")
+        );
+      }
+
+      const byDate = getAttractionsByDate(dateSlot);
+      const text = `As atrações em ${dateSlot} são: ${byDate.join(", ")}`;
+      return Response.json(alexaResponse(text));
     }
 
     if (intent === "GetAttractionsIntent") {
