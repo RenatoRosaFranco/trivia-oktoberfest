@@ -1,3 +1,7 @@
+import fs from 'fs';
+import path from 'path';
+import yaml from 'js-yaml';
+
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -7,6 +11,14 @@ const supabase = createClient(
 
 let currentQuestion = {};
 let ranking = {};
+
+const attractionYamlPath = path.join(process.cwd(), 'src/data/attractions.yaml');
+const attractions = yaml.load(fs.readFileSync(attractionYamlPath, 'utf8'));
+
+function getTodayAttractions() {
+  const today = new Date().toISOString().split('T')[0];
+  return attractions[today] || ["Nenhuma atração cadastrada para hoje."];
+}
 
 async function getRandomQuestion() {
   const { data, error } = await supabase
@@ -38,7 +50,9 @@ export async function POST(req) {
 
   if (event.request.type === "LaunchRequest") {
     return Response.json(
-      alexaResponse("Bem vindo ao Trivia! Diga começar para iniciar o jogo.")
+      alexaResponse(
+        "Bem vindo ao Trivia! Você pode pedir para jogar ou saber as atrações de hoje."
+      )
     );
   }
 
@@ -72,6 +86,12 @@ export async function POST(req) {
       }
 
       return Response.json(alexaResponse(feedback + " Quer jogar outra?"));
+    }
+
+    if (intent === "GetAttractionsIntent") {
+      const todays = getTodaysAttractions();
+      const text = "As atrações de hoje são: " + todays.join(", ");
+      return Response.json(alexaResponse(text));
     }
 
     if (intent === "AMAZON.YesIntent") {
