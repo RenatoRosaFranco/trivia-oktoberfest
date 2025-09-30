@@ -19,6 +19,19 @@ function getAttractionsByDate(dateStr) {
   return attractions[dateStr] || [` Nenhuma atração cadastrada para ${dateStr}.`];
 }
 
+function normalizeDateSlot(dateSlot) {
+  if (!dateSlot) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateSlot)) return dateSlot;
+
+  if (/^XXXX-\d{2}-\d{2}$/.test(dateSlot)) {
+    const todayYear = new Date().getFullYear();
+    return dateSlot.replace("XXXX", todayYear);
+  }
+
+  return null;
+}
+
 function getTodaysAttractions() {
   const today = new Date().toISOString().split('T')[0];
   return attractions[today] || ["Nenhuma atração cadastrada para hoje."];
@@ -93,16 +106,19 @@ export async function POST(req) {
     }
 
     if (intent === "GetAttractionsByDateIntent") {
-      const dateSlot = event.request.intent.slots.date?.value;
-      if (!dateSlot) {
+      const rawDate = event.request.intent.slots.date?.value;
+      const dateISO = normalizeDateSlot(rawDate);
+
+      if (!dateISO) {
         return Response.json(
           alexaResponse("Não entendi a data. Tente falar algo como 8 de outubro.")
         );
       }
 
-      const byDate = getAttractionsByDate(dateSlot);
-      const text = `As atrações em ${dateSlot} são: ${byDate.join(", ")}`;
-      return Response.json(alexaResponse(text));
+      const list = attractions[dateISO] || [`Nenhuma atração cadastrada para ${dateISO}.`];
+      return Response.json(
+        alexaResponse(`As atrações em ${dateISO} são: ${list.join(", ")}`)
+      );
     }
 
     if (intent === "GetAttractionsIntent") {
